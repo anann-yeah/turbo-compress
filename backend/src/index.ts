@@ -174,4 +174,7 @@ app.post('/api/checkout', async (req, res) => {
   }
 });
 
-app.listen(4000, () => console.log('✅ Backend running on http://localhost:4000'));
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(4000, () => console.log('✅ Backend running on http://localhost:4000'));
+}
+export default app;

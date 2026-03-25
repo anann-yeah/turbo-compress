@@ -16,11 +16,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
 
-      - name: Install dependencies (Backend)
-        run: cd backend && npm install
+      - name: Install dependencies
+        run: |
+          cd backend && npm install
+          cd ../frontend && npm install
 
+      - name: Run Backend Smoke Test
+        # This will FAIL the pipeline if the test fails!
+        run: cd backend && npm test 
+
+      - name: Run Frontend Build Check
+        # Fast way to test if frontend is broken
+        run: cd frontend && npm run build
   docker-build-push:
     needs: build-and-test
     runs-on: ubuntu-latest

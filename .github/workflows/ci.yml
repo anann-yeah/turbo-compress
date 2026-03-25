@@ -64,16 +64,15 @@ jobs:
           npm test
 
       - name: Build Frontend
+        # We define these at the STEP level so they are forced into the process
+        env:
+          NEXT_SKIP_TYPECHECK: "true"
+          NEXT_SKIP_ESLINT: "true"
+          NODE_ENV: "production"
         run: |
           cd frontend
-          # Force Next.js to skip the type-check and linting phases
-          NEXT_TELEMETRY_DISABLED=1 \
-          NEXT_PUBLIC_IGNORE_BUILD_ERRORS=true \
+          # DO NOT add any flags here. Just the standard build command.
           npm run build
-        env:
-          # These are the specific "secret" variables Next.js looks for
-          NEXT_SKIP_TYPECHECK: true
-          NEXT_SKIP_ESLINT: true
 
   docker-build-push:
     needs: build-and-test

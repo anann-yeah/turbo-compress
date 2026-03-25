@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ESNext", // Change from 'ES5' to 'ESNext'
-    "ignoreDeprecations": "5.0", // Add this to silence the warning
-    "module": "CommonJS",
-    "rootDir": "./",
-    "outDir": "./dist",
-    "moduleResolution": "node",
+    "target": "ESNext",
+    // Use "5.0" instead of "6.0" if you are on an older sub-version of TS 5
+    "ignoreDeprecations": "5.0", 
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*", "prisma/**/*"]
+    "outDir": "./dist"
+  }
 }

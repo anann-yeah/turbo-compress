@@ -6,7 +6,8 @@ jest.mock('@prisma/client', () => {
   return {
     PrismaClient: jest.fn().mockImplementation(() => ({
       file: {
-        findMany: jest.fn().mockResolvedValue([]), // Returns empty array instantly
+        // We cast the mock function to 'any' to bypass the 'never' check
+        findMany: (jest.fn() as any).mockResolvedValue([]), 
       },
       $connect: jest.fn(),
       $disconnect: jest.fn(),

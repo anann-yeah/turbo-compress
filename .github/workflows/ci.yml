@@ -9,6 +9,32 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    
+    # THIS IS THE FIX: Spin up the infrastructure needed for tests
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,25 +49,30 @@ jobs:
           cd backend && npm install --legacy-peer-deps
           cd ../frontend && npm install --legacy-peer-deps
 
-
-      - name: Generate Prisma Client
-        run: cd backend && npx prisma generate
+      - name: Setup Database Schema
+        env:
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test?schema=public"
+        run: |
+          cd backend
+          npx prisma generate
+          # This creates the tables in the service container before tests run
+          npx prisma migrate dev --name init 
 
       - name: Run Backend Smoke Test
         env:
-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test"
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test?schema=public"
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
           NODE_ENV: test
-        run: cd backend && npm test
-
-      - name: Run Backend Smoke Test
-        env:
-          # This prevents Prisma from crashing the test in the cloud
-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test"
-          NODE_ENV: test
-        run: cd backend && npm test 
+        run: |
+          cd backend
+          npx prisma generate
+          npx prisma migrate dev --name init # Ensure DB is ready
+          npm test
 
       - name: Build Frontend
         run: cd frontend && npm run build
+
   docker-build-push:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -63,7 +94,6 @@ jobs:
       - name: Lowercase Repo Name
         run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      # ... (rest of your file stays the same until the build steps)
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
         with:
@@ -71,7 +101,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+            DATABASE_URL=postgresql://postgres:password@localhost:5432/test
           tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
 
       - name: Build and push Worker image
@@ -81,6 +111,5 @@ jobs:
           file: ./worker/Dockerfile
           push: true
           build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+            DATABASE_URL=postgresql://postgres:password@localhost:5432/test
           tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest
-# ...

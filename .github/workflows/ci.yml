@@ -10,7 +10,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     
-    # THIS IS THE FIX: Spin up the infrastructure needed for tests
     services:
       postgres:
         image: postgres:15
@@ -49,16 +48,7 @@ jobs:
           cd backend && npm install --legacy-peer-deps
           cd ../frontend && npm install --legacy-peer-deps
 
-      - name: Setup Database Schema
-        env:
-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test?schema=public"
-        run: |
-          cd backend
-          npx prisma generate
-          # This creates the tables in the service container before tests run
-          npx prisma migrate dev --name init 
-
-      - name: Run Backend Smoke Test
+      - name: Setup Database and Run Tests
         env:
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/test?schema=public"
           REDIS_HOST: localhost
@@ -67,7 +57,7 @@ jobs:
         run: |
           cd backend
           npx prisma generate
-          npx prisma migrate dev --name init # Ensure DB is ready
+          npx prisma db push
           npm test
 
       - name: Build Frontend
@@ -100,8 +90,6 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          build-args: |
-            DATABASE_URL=postgresql://postgres:password@localhost:5432/test
           tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
 
       - name: Build and push Worker image
@@ -110,6 +98,4 @@ jobs:
           context: ./worker
           file: ./worker/Dockerfile
           push: true
-          build-args: |
-            DATABASE_URL=postgresql://postgres:password@localhost:5432/test
           tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest

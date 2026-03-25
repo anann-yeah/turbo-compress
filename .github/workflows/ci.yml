@@ -42,6 +42,7 @@ jobs:
       - name: Lowercase Repo Name
         run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
+      # ... (rest of your file stays the same until the build steps)
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
         with:
@@ -61,11 +62,4 @@ jobs:
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
           tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest
-          
-      - name: Build and push Frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}/frontend:latest
+# ...

@@ -1,11 +1,11 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // DO NOT PUT A URL LINE HERE
 }
+
 generator client {
-  provider      = "prisma-client-js"
-  // NOTICE: previewFeatures is removed because it's now built-in.
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 model User {
   id    String @id @default(uuid())

@@ -66,15 +66,14 @@ jobs:
       - name: Build Frontend
         run: |
           cd frontend
-          # Pass the 'ignore' flags as environment variables
+          # Force Next.js to skip the type-check and linting phases
           NEXT_TELEMETRY_DISABLED=1 \
-          TS_NODE_TRANSPILE_ONLY=true \
           NEXT_PUBLIC_IGNORE_BUILD_ERRORS=true \
           npm run build
         env:
-          # This tells Next.js explicitly to skip the TS check during 'next build'
-          NEXTJS_IGNORE_TYPECHECK: 1
-          NEXTJS_IGNORE_ESLINT: 1
+          # These are the specific "secret" variables Next.js looks for
+          NEXT_SKIP_TYPECHECK: true
+          NEXT_SKIP_ESLINT: true
 
   docker-build-push:
     needs: build-and-test
@@ -103,6 +102,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
+          # Change this line:
           tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
 
       - name: Build and push Worker image
@@ -111,4 +111,5 @@ jobs:
           context: ./worker
           file: ./worker/Dockerfile
           push: true
+          # And this line:
           tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest

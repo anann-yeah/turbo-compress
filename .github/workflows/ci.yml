@@ -67,7 +67,8 @@ jobs:
         run: |
           cd frontend
           rm -rf .next
-          npm run build
+          # This forces Next.js to ignore the cache and read the new tsconfig
+          NODE_ENV=production npm run build
 
   docker-build-push:
     needs: build-and-test

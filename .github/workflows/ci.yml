@@ -64,7 +64,10 @@ jobs:
           npm test
 
       - name: Build Frontend
-        run: cd frontend && npm run build
+        run: |
+          cd frontend
+          rm -rf .next
+          npm run build
 
   docker-build-push:
     needs: build-and-test

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2022",
+    "target": "ESNext", // Change from 'ES5' to 'ESNext'
+    "ignoreDeprecations": "5.0", // Add this to silence the warning
     "module": "CommonJS",
     "rootDir": "./",
     "outDir": "./dist",

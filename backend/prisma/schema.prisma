@@ -1,8 +1,7 @@
 datasource db {
   provider = "postgresql"
-  // NOTICE: url is gone, adapter logic is handled in your code.
+  url      = env("DATABASE_URL")
 }
-
 generator client {
   provider      = "prisma-client-js"
   // NOTICE: previewFeatures is removed because it's now built-in.

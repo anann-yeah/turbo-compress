@@ -49,17 +49,18 @@ jobs:
           cd ../frontend && npm install --legacy-peer-deps
 
       - name: Setup Database and Run Tests
-        env:
-          # Use the service container's address (localhost inside the runner)
-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test?schema=public"
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          NODE_ENV: test
         run: |
           cd backend
           npx prisma generate
-          # Explicitly passing the URL here to bypass the config requirement
-          DATABASE_URL="postgresql://postgres:password@localhost:5432/test?schema=public" npx prisma db push --accept-data-loss
+          # This forces the URL directly into the command execution environment
+          export DATABASE_URL="postgresql://postgres:password@localhost:5432/test?schema=public"
+          npx prisma db push --accept-data-loss
+          
+          # Now run the tests with all required variables
+          DATABASE_URL="postgresql://postgres:password@localhost:5432/test?schema=public" \
+          REDIS_HOST=localhost \
+          REDIS_PORT=6379 \
+          NODE_ENV=test \
           npm test
 
       - name: Build Frontend

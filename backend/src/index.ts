@@ -21,7 +21,7 @@ const upload = multer({
 const connectionString = process.env.DATABASE_URL || "postgresql://admin:password123@localhost:5432/turbocompress?schema=public";
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool as any);
-const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({ adapter });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_...', { 
   apiVersion: '2025-01-27.clover' as any 

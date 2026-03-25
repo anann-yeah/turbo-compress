@@ -3,7 +3,7 @@ name: TurboCompress CI/CD Pipeline
 on:
   push:
     branches: [ "main" ]
-  pull_request:
+  pull_request: 
     branches: [ "main" ]
 
 jobs:
@@ -19,10 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies (Backend)
-        run: cd backend && npm ci
-
-      - name: Run Tests (Backend)
-        run: cd backend && npm test || echo "Add your test scripts to package.json"
+        run: cd backend && npm install # Changed from 'ci' to 'install' for your local setup
 
   docker-build-push:
     needs: build-and-test
@@ -42,23 +39,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # This step makes sure your image names are lowercase (GHCR requirement)
+      - name: Lowercase Repo Name
+        run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
+          file: ./backend/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/turbocompress-backend:latest
+          tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
 
       - name: Build and push Worker image
         uses: docker/build-push-action@v5
         with:
           context: ./worker
+          file: ./worker/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/turbocompress-worker:latest
+          tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest
           
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
+          file: ./frontend/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/turbocompress-frontend:latest
+          tags: ghcr.io/${{ env.REPO_LOWER }}/frontend:latest

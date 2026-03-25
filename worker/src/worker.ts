@@ -1,7 +1,13 @@
 import { Worker } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+// Set up the Prisma Postgres Adapter
+const connectionString = process.env.DATABASE_URL || "postgresql://admin:password123@localhost:5432/turbocompress?schema=public";
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool as any);
+const prisma = new PrismaClient({ adapter });
 
 const worker = new Worker('file-scan', async job => {
   const { fileId, s3Key } = job.data;
@@ -28,4 +34,4 @@ const worker = new Worker('file-scan', async job => {
 });
 
 worker.on('completed', job => console.log(`Job ${job.id} completed.`));
-worker.on('failed', (job, err) => console.log(`Job failed: ${err.message}`));
+worker.on('failed', (job, err) => console.log(`Job failed: ${err?.message}`));

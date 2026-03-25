@@ -50,6 +50,7 @@ jobs:
 
       - name: Setup Database and Run Tests
         env:
+          # Use the service container's address (localhost inside the runner)
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/test?schema=public"
           REDIS_HOST: localhost
           REDIS_PORT: 6379
@@ -57,7 +58,8 @@ jobs:
         run: |
           cd backend
           npx prisma generate
-          npx prisma db push
+          # Explicitly passing the URL here to bypass the config requirement
+          DATABASE_URL="postgresql://postgres:password@localhost:5432/test?schema=public" npx prisma db push --accept-data-loss
           npm test
 
       - name: Build Frontend

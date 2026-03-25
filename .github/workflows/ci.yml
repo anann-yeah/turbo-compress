@@ -23,6 +23,16 @@ jobs:
           cd backend && npm install --legacy-peer-deps
           cd ../frontend && npm install --legacy-peer-deps
 
+
+      - name: Generate Prisma Client
+        run: cd backend && npx prisma generate
+
+      - name: Run Backend Smoke Test
+        env:
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test"
+          NODE_ENV: test
+        run: cd backend && npm test
+
       - name: Run Backend Smoke Test
         env:
           # This prevents Prisma from crashing the test in the cloud

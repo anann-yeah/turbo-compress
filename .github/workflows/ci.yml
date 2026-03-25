@@ -20,15 +20,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd backend && npm install
-          cd ../frontend && npm install
+          cd backend && npm install --legacy-peer-deps
+          cd ../frontend && npm install --legacy-peer-deps
 
       - name: Run Backend Smoke Test
-        # This will FAIL the pipeline if the test fails!
+        env:
+          # This prevents Prisma from crashing the test in the cloud
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/test"
+          NODE_ENV: test
         run: cd backend && npm test 
 
-      - name: Run Frontend Build Check
-        # Fast way to test if frontend is broken
+      - name: Build Frontend
         run: cd frontend && npm run build
   docker-build-push:
     needs: build-and-test

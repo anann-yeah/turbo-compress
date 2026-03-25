@@ -8,5 +8,5 @@ describe('Backend Smoke Test', () => {
     const response = await request(app).get('/api/files');
     // We expect a 200 even if the array is empty
     expect(response.status).toBe(200); 
-  });
+  }, 5000);
 });

@@ -19,7 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies (Backend)
-        run: cd backend && npm install # Changed from 'ci' to 'install' for your local setup
+        run: cd backend && npm install
 
   docker-build-push:
     needs: build-and-test
@@ -39,28 +39,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # This step makes sure your image names are lowercase (GHCR requirement)
       - name: Lowercase Repo Name
         run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-     - name: Build and push Backend image
+      - name: Build and push Backend image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          # ADD THIS LINE:
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
           tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
 
-     - name: Build and push Worker image
+      - name: Build and push Worker image
         uses: docker/build-push-action@v5
         with:
           context: ./worker
           file: ./worker/Dockerfile
           push: true
-          # ADD THIS:
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
           tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest

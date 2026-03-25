@@ -20,7 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "minio": "^8.0.7",
     "multer": "^2.1.1",
-    "pg": "^8.20.0",
+    "pg": "^8.11.0",
     "stripe": "^20.4.1"
   },
   "devDependencies": {

@@ -1,13 +1,12 @@
 datasource db {
   provider = "postgresql"
-  // REMOVE 'url' and ADD 'adapter'
-  adapter  = "pg" 
+  // url is removed; we use the adapter instead
 }
 
 generator client {
-  provider = "prisma-client-js"
-  // This ensures it works on your Alpine Docker image
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["adapterPg"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 model User {
   id    String @id @default(uuid())

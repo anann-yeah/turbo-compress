@@ -5,5 +5,4 @@ RUN npm install
 COPY . .
 # We provide a dummy URL just for the generation step
 RUN DATABASE_URL="postgresql://localhost:5432/dummy" npx prisma generate
-EXPOSE 4000
 CMD ["npm", "run", "dev"]

@@ -9,12 +9,11 @@ generator client {
   previewFeatures = ["driverAdapters"]
 }
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  isPro     Boolean  @default(false)
-  files     File[]
-  createdAt DateTime @default(now())
+  id    String @id @default(uuid())
+  email String @unique
+  name  String? // Add this line!
+  isPro Boolean @default(false)
+  files File[]
 }
 
 model File {

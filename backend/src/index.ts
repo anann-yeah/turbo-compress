@@ -4,7 +4,8 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Queue } from 'bullmq';
 import Stripe from 'stripe';
-import * as Minio from 'minio';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import cors from 'cors';
 import multer from 'multer';
 
@@ -25,13 +26,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_...', {
   apiVersion: '2025-01-27.clover' as any 
 });
 
-// Use environment variables for CI compatibility
-const s3Client = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT || 'localhost',
-  port: parseInt(process.env.MINIO_PORT || '9000'),
-  useSSL: false,
-  accessKey: process.env.MINIO_ACCESS_KEY || 'admin',
-  secretKey: process.env.MINIO_SECRET_KEY || 'password123',
+// S3_ENDPOINT set => local MinIO (dev). Unset => real AWS S3, creds from the
+// EC2 instance role (no static keys needed in prod).
+const S3_BUCKET = process.env.S3_BUCKET || 'turbocompress';
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'ap-south-1',
+  ...(process.env.S3_ENDPOINT
+    ? {
+        endpoint: process.env.S3_ENDPOINT,
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: process.env.MINIO_ACCESS_KEY || 'admin',
+          secretAccessKey: process.env.MINIO_SECRET_KEY || 'password123',
+        },
+      }
+    : {}),
 });
 
 // Fix: Use REDIS_HOST from environment for GitHub Actions
@@ -66,7 +75,11 @@ app.get('/api/download/:fileId', async (req, res) => {
     const file = await prisma.file.findUnique({ where: { id: fileId } });
     if (!file) return res.status(404).json({ error: "File not found" });
 
-    const downloadUrl = await s3Client.presignedGetObject('turbocompress', file.s3Key, 3600);
+    const downloadUrl = await getSignedUrl(
+      s3Client,
+      new GetObjectCommand({ Bucket: S3_BUCKET, Key: file.s3Key }),
+      { expiresIn: 3600 }
+    );
     res.json({ url: downloadUrl });
   } catch (error) {
     res.status(500).json({ error: "Download link generation failed" });
@@ -81,16 +94,18 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
     await prisma.user.upsert({
       where: { id: userId },
-      update: {}, 
-      create: { 
-        id: userId, 
+      update: {},
+      create: {
+        id: userId,
         email: `${userId}@example.com`,
-        password: "dummy_password", 
-      } as any
+        password: "dummy_password",
+      },
     });
 
     const s3Key = `${Date.now()}-${file.originalname}`;
-    await s3Client.putObject('turbocompress', s3Key, file.buffer);
+    await s3Client.send(
+      new PutObjectCommand({ Bucket: S3_BUCKET, Key: s3Key, Body: file.buffer })
+    );
 
     const dbFile = await prisma.file.create({
       data: {

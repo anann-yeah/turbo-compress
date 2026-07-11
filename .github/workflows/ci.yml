@@ -80,20 +80,15 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
-      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Lowercase Repo Name
-        run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
@@ -101,8 +96,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          # Change this line:
-          tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/turbocompress-backend:latest
 
       - name: Build and push Worker image
         uses: docker/build-push-action@v5
@@ -110,5 +104,4 @@ jobs:
           context: ./worker
           file: ./worker/Dockerfile
           push: true
-          # And this line:
-          tags: ghcr.io/${{ env.REPO_LOWER }}/worker:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/turbocompress-worker:latest

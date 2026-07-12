@@ -5,7 +5,11 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 // Set up the Prisma Postgres Adapter
 const connectionString = process.env.DATABASE_URL || "postgresql://admin:password123@localhost:5432/turbocompress?schema=public";
-const pool = new Pool({ connectionString });
+const pool = new Pool({
+  connectionString,
+  // RDS enforces SSL (rds.force_ssl=1); pg doesn't negotiate it by default
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+});
 const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
 

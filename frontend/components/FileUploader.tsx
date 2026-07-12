@@ -73,7 +73,7 @@ export default function FileUploader({ onUploadSuccess }: { onUploadSuccess: () 
       formData.append('originalSize', origMB); // Sends e.g. "180.50"
       formData.append('compressedSize', compMB); // Sends e.g. "45.20"
 
-      await axios.post('http://localhost:4000/api/upload', formData, {
+      await axios.post('/api/upload', formData, {
         onUploadProgress: (p: any) => {
           if (p.total) setProgress(Math.round((p.loaded * 100) / p.total));
         }

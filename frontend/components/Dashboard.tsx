@@ -17,7 +17,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
 
   const fetchFiles = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/files');
+      const res = await fetch('/api/files');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setFiles(data);
@@ -37,7 +37,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
   // --- NEW: Download Handler ---
   const handleDownload = async (fileId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/download/${fileId}`);
+      const res = await fetch(`/api/download/${fileId}`);
       if (!res.ok) throw new Error('Download failed');
       
       const { url } = await res.json();
@@ -52,7 +52,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
   const handleDelete = async (fileId: string) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/files/${fileId}`, { 
+      const res = await fetch(`/api/files/${fileId}`, {
         method: 'DELETE' 
       });
       if (res.ok) fetchFiles();
@@ -63,7 +63,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
 
   const handleUpgrade = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/checkout', { 
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: 'guest-user-1' })

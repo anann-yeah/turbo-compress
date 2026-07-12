@@ -9,19 +9,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
-# COPY THE PRISMA FOLDER BEFORE GENERATING
-COPY prisma ./prisma/
-
-# Set these for the build process
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
-
-# Run the generator
-RUN npx prisma generate
-
-# Copy the rest of the code
+# Copy the rest of the code (needs prisma.config.ts at the package root,
+# which prisma generate reads for datasource info)
 COPY . .
 
+ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
+RUN npx prisma generate
+RUN npm run build
+
 EXPOSE 4000
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

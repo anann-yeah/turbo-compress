@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
     "isolatedModules": true,
+    "ignoreDeprecations": "6.0",
     "target": "es2022",
     "module": "CommonJS",
-    "rootDir": "./",
+    "rootDir": "./src",
     "outDir": "./dist",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["jest", "node"], // ADD THIS LINE
+    "types": ["node"],
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "prisma/**/*","jest.config.cjs"]
+  "include": ["src/**/*"]
 }

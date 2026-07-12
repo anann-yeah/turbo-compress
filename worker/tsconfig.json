@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "target": "es2022",
     "module": "CommonJS",
     "moduleResolution": "node",
@@ -8,7 +9,9 @@
     "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "rootDir": "./src",
+    "outDir": "./dist"
   },
-  "include": ["src/**/*", "prisma/**/*"]
+  "include": ["src/**/*"]
 }

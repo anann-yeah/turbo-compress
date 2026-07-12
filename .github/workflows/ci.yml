@@ -113,3 +113,28 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/turbocompress-frontend:latest
+
+  deploy:
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      # The EC2 instance has no public IPv4 and GitHub-hosted runners have
+      # no IPv6 egress, so we can't SSH to it directly. EC2 Instance Connect
+      # Endpoint (EICE) tunnels the connection over the AWS API instead.
+      - name: Deploy over EC2 Instance Connect Endpoint tunnel
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -o StrictHostKeyChecking=no \
+              -o ProxyCommand="aws ec2-instance-connect open-tunnel --instance-id i-0b606ce337e42693a" \
+              -i ~/.ssh/deploy_key ubuntu@172.31.34.103 \
+              "cd ~ && sudo docker compose -f docker-compose.yml pull && sudo docker compose -f docker-compose.yml up -d"

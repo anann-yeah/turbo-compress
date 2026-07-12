@@ -44,7 +44,10 @@ const s3Client = new S3Client({
           secretAccessKey: process.env.MINIO_SECRET_KEY || 'password123',
         },
       }
-    : {}),
+    // This EC2 instance has no public IPv4 (cost reasons), so the default
+    // S3 endpoint (IPv4-only) is unreachable and PutObject/GetObject just
+    // hang until timeout. The dualstack endpoint has AAAA records.
+    : { useDualstackEndpoint: true }),
 });
 
 // Fix: Use REDIS_HOST from environment for GitHub Actions

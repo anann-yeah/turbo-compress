@@ -1,3 +1,4 @@
+import dns from 'node:dns';
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
@@ -8,6 +9,12 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import cors from 'cors';
 import multer from 'multer';
+
+// This runs on an EC2 host with no public IPv4 (cost reasons). Dualstack
+// hostnames (S3, Stripe) resolve to both A and AAAA records, and Node's
+// default resolution order can pick the (unreachable) IPv4 address first,
+// hanging until TCP timeout instead of falling back to IPv6.
+dns.setDefaultResultOrder('ipv6first');
 
 const app = express();
 const upload = multer({ 

@@ -129,6 +129,9 @@ jobs:
       # The EC2 instance has no public IPv4 and GitHub-hosted runners have
       # no IPv6 egress, so we can't SSH to it directly. EC2 Instance Connect
       # Endpoint (EICE) tunnels the connection over the AWS API instead.
+      # The turbocompress-ci IAM user needs ec2:DescribeInstanceConnectEndpoints
+      # in addition to OpenTunnel/DescribeInstances, or open-tunnel fails
+      # with UnauthorizedOperation.
       - name: Deploy over EC2 Instance Connect Endpoint tunnel
         run: |
           mkdir -p ~/.ssh

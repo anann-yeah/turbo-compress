@@ -136,9 +136,10 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           # Secret is base64-encoded so copy/paste whitespace mangling can't
-          # corrupt the PEM (a stray leading space per line breaks libcrypto's
-          # parser with "error in libcrypto" and no clearer message).
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          # corrupt the PEM. Still strip all whitespace before decoding: if
+          # whatever the secret was pasted through line-wraps the base64
+          # itself, plain `base64 -d` rejects the embedded newlines.
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY_B64 }}" | tr -d '[:space:]' | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=no \
               -o ProxyCommand="aws ec2-instance-connect open-tunnel --instance-id i-0b606ce337e42693a" \

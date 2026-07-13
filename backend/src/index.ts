@@ -9,6 +9,9 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import cors from 'cors';
 import multer from 'multer';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { requireAuth, AuthedRequest, JWT_SECRET } from './middleware/auth';
 
 // This runs on an EC2 host with no public IPv4 (cost reasons). Dualstack
 // hostnames (S3, Stripe) resolve to both A and AAAA records, and Node's
@@ -69,11 +72,62 @@ app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
+// --- AUTH ROUTES ---
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ error: "An account with this email already exists" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { email, password: hashed, name },
+    });
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, isPro: user.isPro } });
+  } catch (error) {
+    console.error("Signup Error:", error);
+    res.status(500).json({ error: "Signup failed" });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, isPro: user.isPro } });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
 // --- ROUTES ---
 
-app.get('/api/files', async (req, res) => {
+app.get('/api/files', requireAuth, async (req: AuthedRequest, res) => {
   try {
     const files = await prisma.file.findMany({
+      where: { userId: req.userId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(files || []);
@@ -83,11 +137,12 @@ app.get('/api/files', async (req, res) => {
   }
 });
 
-app.get('/api/download/:fileId', async (req, res) => {
+app.get('/api/download/:fileId', requireAuth, async (req: AuthedRequest, res) => {
   try {
-    const { fileId } = req.params;
+    const fileId = String(req.params.fileId);
     const file = await prisma.file.findUnique({ where: { id: fileId } });
     if (!file) return res.status(404).json({ error: "File not found" });
+    if (file.userId !== req.userId) return res.status(403).json({ error: "Forbidden" });
 
     const downloadUrl = await getSignedUrl(
       s3Client,
@@ -100,21 +155,11 @@ app.get('/api/download/:fileId', async (req, res) => {
   }
 });
 
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+app.post('/api/upload', requireAuth, upload.single('file'), async (req: AuthedRequest, res) => {
   try {
-    const userId = req.body.userId || "guest-user-1";
+    const userId = req.userId!;
     const file = req.file;
     if (!file) return res.status(400).json({ error: "No file" });
-
-    await prisma.user.upsert({
-      where: { id: userId },
-      update: {},
-      create: {
-        id: userId,
-        email: `${userId}@example.com`,
-        password: "dummy_password",
-      },
-    });
 
     const s3Key = `${Date.now()}-${file.originalname}`;
     await s3Client.send(
@@ -140,7 +185,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-app.post('/api/checkout', async (req, res) => {
+app.post('/api/checkout', requireAuth, async (req: AuthedRequest, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -149,6 +194,7 @@ app.post('/api/checkout', async (req, res) => {
         quantity: 1,
       }],
       mode: 'payment',
+      metadata: { userId: req.userId! },
       success_url: `http://localhost:3000/success`,
       cancel_url: `http://localhost:3000/cancel`,
     });

@@ -5,6 +5,7 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { Button, Text, Progress, Card, Group, Stack, Loader } from '@mantine/core';
 import { IconUpload, IconCheck } from '@tabler/icons-react';
 import axios from 'axios';
+import { authHeaders } from '../lib/auth';
 
 export default function FileUploader({ onUploadSuccess }: { onUploadSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -69,11 +70,11 @@ export default function FileUploader({ onUploadSuccess }: { onUploadSuccess: () 
 
       const formData = new FormData();
       formData.append('file', compressedBlob, file.name);
-      formData.append('userId', 'guest-user-1');
       formData.append('originalSize', origMB); // Sends e.g. "180.50"
       formData.append('compressedSize', compMB); // Sends e.g. "45.20"
 
       await axios.post('/api/upload', formData, {
+        headers: authHeaders(),
         onUploadProgress: (p: any) => {
           if (p.total) setProgress(Math.round((p.loaded * 100) / p.total));
         }

@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Table, Button, Badge, Card, Title, Group, Text, Loader, Center, Stack } from '@mantine/core';
 import { IconTrash, IconBolt, IconDownload } from '@tabler/icons-react';
+import { authHeaders, clearToken } from '../lib/auth';
 
 interface VideoFile {
   id: string;
@@ -12,12 +14,18 @@ interface VideoFile {
 }
 
 export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }) {
+  const router = useRouter();
   const [files, setFiles] = useState<VideoFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFiles = useCallback(async () => {
     try {
-      const res = await fetch('/api/files');
+      const res = await fetch('/api/files', { headers: authHeaders() });
+      if (res.status === 401) {
+        clearToken();
+        router.replace('/login');
+        return;
+      }
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setFiles(data);
@@ -26,7 +34,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     fetchFiles();
@@ -37,7 +45,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
   // --- NEW: Download Handler ---
   const handleDownload = async (fileId: string) => {
     try {
-      const res = await fetch(`/api/download/${fileId}`);
+      const res = await fetch(`/api/download/${fileId}`, { headers: authHeaders() });
       if (!res.ok) throw new Error('Download failed');
       
       const { url } = await res.json();
@@ -53,7 +61,8 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
       const res = await fetch(`/api/files/${fileId}`, {
-        method: 'DELETE' 
+        method: 'DELETE',
+        headers: authHeaders(),
       });
       if (res.ok) fetchFiles();
     } catch (err) {
@@ -65,8 +74,7 @@ export default function Dashboard({ refreshTrigger }: { refreshTrigger: number }
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'guest-user-1' })
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
       });
       const { url } = await res.json();
       window.location.href = url;
